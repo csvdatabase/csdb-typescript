@@ -1,0 +1,40 @@
+{
+  "name": "@csdb/javascript",
+  "version": "0.1.0",
+  "description": "TypeScript implementation of the CSDB single-file relational database format.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "node --import tsx --test test/*.test.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json"
+  },
+  "keywords": [
+    "csdb",
+    "csv",
+    "database",
+    "sql",
+    "typescript"
+  ],
+  "license": "GPL-3.0-or-later",
+  "dependencies": {
+    "yaml": "^2.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.1",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
+  }
+}
