@@ -1,6 +1,9 @@
 import assert from "node:assert/strict";
+import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "node:test";
-import { CSDBDatabase, parseSQL } from "../src/index.js";
+import { CSDBDatabase, openCSDB, parseSQL } from "../src/index.js";
 
 const payroll = `--- csdb
 format: CSDB
@@ -105,4 +108,36 @@ test("relationship joins attach nested rows in method API", () => {
 test("SQL parser supports DDL plan generation", () => {
   assert.deepEqual(parseSQL("CREATE TABLE tags (label text primary key)").kind, "create-table");
   assert.deepEqual(parseSQL("DROP TABLE tags"), { kind: "drop-table", table: "tags" });
+});
+
+test("openCSDB stores path and auto-saves successful mutations", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "csdb-autosave-"));
+  const path = join(dir, "payroll.csdb");
+  await writeFile(path, payroll, "utf8");
+
+  const db = await openCSDB(path, { autoSave: true });
+  assert.equal(db.path, path);
+  assert.equal(db.autoSave, true);
+
+  db.table("workers").insert({ id: "w_003", name: "Katherine Johnson", email: "kj@example.com" });
+
+  const saved = await readFile(path, "utf8");
+  assert.match(saved, /Katherine Johnson/);
+  assert.match(saved, /kj@example.com/);
+});
+
+test("autoSave false keeps mutations in memory until explicit save", async () => {
+  const dir = await mkdtemp(join(tmpdir(), "csdb-manual-save-"));
+  const path = join(dir, "payroll.csdb");
+  await writeFile(path, payroll, "utf8");
+
+  const db = await openCSDB(path);
+  db.table("workers").insert({ id: "w_003", name: "Katherine Johnson", email: "kj@example.com" });
+
+  const beforeSave = await readFile(path, "utf8");
+  assert.doesNotMatch(beforeSave, /Katherine Johnson/);
+
+  db.saveSync();
+  const afterSave = await readFile(path, "utf8");
+  assert.match(afterSave, /Katherine Johnson/);
 });

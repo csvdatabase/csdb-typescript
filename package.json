@@ -1,7 +1,7 @@
 {
-  "name": "@csdb/javascript",
+  "name": "@csvdatabase/csdb",
   "version": "0.1.0",
-  "description": "TypeScript implementation of the CSDB single-file relational database format.",
+  "description": "A Comma Separated Database (CSDB) is a human-readable, text-based database format that can be used both as a portable exchange format and as a lightweight AI legible backend.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -25,6 +25,7 @@
     "csdb",
     "csv",
     "database",
+    "yaml",
     "sql",
     "typescript"
   ],

@@ -1,4 +1,5 @@
 import { CSDBDatabase } from "./database.js";
+import type { DatabaseParseOptions } from "./database.js";
 
 export { CSDBDatabase } from "./database.js";
 export { openCSDB, saveCSDB } from "./files.js";
@@ -30,9 +31,11 @@ export type {
   TableSchema,
   UpdatePlan
 } from "./types.js";
+export type { DatabaseOptions, DatabaseParseOptions } from "./database.js";
+export type { OpenCSDBOptions } from "./files.js";
 
-export function parseCSDB(text: string): CSDBDatabase {
-  return CSDBDatabase.parse(text);
+export function parseCSDB(text: string, options?: DatabaseParseOptions): CSDBDatabase {
+  return CSDBDatabase.parse(text, options);
 }
 
 export function serializeCSDB(db: CSDBDatabase): string {

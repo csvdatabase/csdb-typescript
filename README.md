@@ -26,6 +26,26 @@ const workers = db.sql(
 );
 ```
 
+## Opening and saving
+
+`openCSDB(path, options?)` stores the source path on the database object.
+
+```ts
+const db = await openCSDB("payroll.csdb", { autoSave: true });
+
+db.path; // "payroll.csdb"
+db.autoSave; // true
+```
+
+When `autoSave` is `true`, every successful mutation writes the database back to `db.path` immediately. This applies to fluent API mutations, SQL mutations, `createTable`, `dropTable`, and direct `execute` mutation plans.
+
+When `autoSave` is `false`, mutations stay in memory until you explicitly save:
+
+```ts
+db.table("workers").insert({ id: "w_001", name: "Ada", email: "ada@example.com" });
+db.saveSync();
+```
+
 ## Current SQL Support
 
 - `SELECT ... FROM ...`
