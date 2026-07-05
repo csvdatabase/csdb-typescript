@@ -174,11 +174,17 @@ function coerceRow(table: Table, input: Row): Row {
   for (const column of columns) {
     const definition = schema.columns[column] ?? schema.computed_fields[column]?.type;
     if (!definition) throw new ValidationError(`Unknown column "${column}" for table "${table.name}".`);
-    const value = (input[column] ?? schema.defaults[column] ?? null) as RowValue;
+    const value = valueForColumn(input, schema.defaults, column);
     const encoded = encodeValue(column, definition, value, required.has(column));
-    row[column] = decodeCell(column, definition, { text: encoded, quoted: value === "" }, required.has(column));
+    row[column] = decodeCell(column, definition, { text: encoded, quoted: value !== null && encoded === "" }, required.has(column));
   }
   return row;
+}
+
+function valueForColumn(input: Row, defaults: Record<string, unknown>, column: string): RowValue {
+  if (Object.prototype.hasOwnProperty.call(input, column)) return (input[column] ?? null) as RowValue;
+  if (Object.prototype.hasOwnProperty.call(defaults, column)) return (defaults[column] ?? null) as RowValue;
+  return null;
 }
 
 function matches(table: string, row: Row, where: Expr | undefined): boolean {

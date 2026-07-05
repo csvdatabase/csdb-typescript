@@ -141,3 +141,105 @@ test("autoSave false keeps mutations in memory until explicit save", async () =>
   const afterSave = await readFile(path, "utf8");
   assert.match(afterSave, /Katherine Johnson/);
 });
+
+test("all supported types accept nullable CSV fields and round-trip null", () => {
+  const nullableTypes = `--- csdb
+format: CSDB
+version: 1
+name: nullable_types
+tables:
+  - values
+
+--- table:values:schema
+name: values
+columns:
+  text_col: text
+  varchar_col:
+    type: varchar
+    length: 20
+  integer_col: integer
+  bigint_col: bigint
+  real_col: real
+  numeric_col: numeric
+  boolean_col: boolean
+  date_col: date
+  timestamp_col: timestamp
+  json_col: json
+  custom_col:
+    type: custom
+    type_name: demo_type
+
+--- table:values:data
+text_col,varchar_col,integer_col,bigint_col,real_col,numeric_col,boolean_col,date_col,timestamp_col,json_col,custom_col
+,,,,,,,,,,
+`;
+
+  const db = CSDBDatabase.parse(nullableTypes);
+  const row = db.table("values").first();
+  assert.ok(row);
+  for (const value of Object.values(row)) assert.equal(value, null);
+
+  const serialized = db.toString({ machineIndexes: "omit" });
+  assert.match(serialized, /^,,,,,,,,,,$/m);
+
+  const reparsed = CSDBDatabase.parse(serialized);
+  const reparsedRow = reparsed.table("values").first();
+  assert.ok(reparsedRow);
+  for (const value of Object.values(reparsedRow)) assert.equal(value, null);
+});
+
+test("empty strings remain distinct from null when serializing", () => {
+  const db = CSDBDatabase.parse(`--- csdb
+format: CSDB
+version: 1
+name: strings
+tables:
+  - values
+
+--- table:values:schema
+name: values
+columns:
+  text_col: text
+  integer_col: integer
+
+--- table:values:data
+text_col,integer_col
+`);
+
+  db.table("values").insert({ text_col: "", integer_col: null });
+  const serialized = db.toString({ machineIndexes: "omit" });
+  assert.match(serialized, /^"",$/m);
+
+  const row = CSDBDatabase.parse(serialized).table("values").first();
+  assert.equal(row?.text_col, "");
+  assert.equal(row?.integer_col, null);
+});
+
+test("explicit null assignment is not replaced by defaults", () => {
+  const db = CSDBDatabase.parse(`--- csdb
+format: CSDB
+version: 1
+name: defaults
+tables:
+  - events
+
+--- table:events:schema
+name: events
+columns:
+  id: text
+  happened_at: timestamp
+required:
+  - id
+defaults:
+  happened_at: 2026-01-01T00:00:00Z
+
+--- table:events:data
+id,happened_at
+`);
+
+  db.table("events").insert({ id: "explicit-null", happened_at: null });
+  db.table("events").insert({ id: "defaulted" });
+
+  assert.equal(db.table("events").where("id", "=", "explicit-null").first()?.happened_at, null);
+  assert.equal(db.table("events").where("id", "=", "defaulted").first()?.happened_at, "2026-01-01T00:00:00Z");
+});

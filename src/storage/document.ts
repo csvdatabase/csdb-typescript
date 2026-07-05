@@ -3,7 +3,7 @@ import type { CSDBDocument, CSDBMetadata, ColumnType, MachineSection, Row, Table
 import { ValidationError } from "../errors.js";
 import { normalizeSchema, storedColumnNames, validateDocument } from "../catalog.js";
 import { decodeCell, encodeValue } from "../typeRegistry.js";
-import { assertCsvWidth, parseCsv, stringifyCsv } from "../util/csv.js";
+import { assertCsvWidth, parseCsv, stringifyCsv, type CsvWritableCell } from "../util/csv.js";
 import { assertValidName, columnNames, keyFor } from "../util/identifiers.js";
 
 interface RawSection {
@@ -115,10 +115,14 @@ function parseTableData(tableName: string, schema: TableSchema, text: string): R
 export function stringifyTableData(table: Table): string {
   const columns = storedColumnNames(table.schema);
   const required = new Set(table.schema.required);
-  const records = [
+  const records: CsvWritableCell[][] = [
     columns,
     ...table.rows.map((row) =>
-      columns.map((column) => encodeValue(column, columnDefinition(table.schema, column), row[column] ?? null, required.has(column)))
+      columns.map((column) => {
+        const value = row[column] ?? null;
+        const text = encodeValue(column, columnDefinition(table.schema, column), value, required.has(column));
+        return { text, quoted: value !== null && text === "" };
+      })
     )
   ];
   return stringifyCsv(records);

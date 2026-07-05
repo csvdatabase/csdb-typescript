@@ -6,6 +6,7 @@ export interface CsvCell {
 }
 
 export type CsvRecord = CsvCell[];
+export type CsvWritableCell = string | CsvCell;
 
 export function parseCsv(text: string): CsvRecord[] {
   const rows: CsvRecord[] = [];
@@ -73,13 +74,15 @@ export function parseCsv(text: string): CsvRecord[] {
   return rows;
 }
 
-export function stringifyCsv(records: string[][]): string {
+export function stringifyCsv(records: CsvWritableCell[][]): string {
   return records.map((row) => row.map(escapeCsvCell).join(",")).join("\n");
 }
 
-export function escapeCsvCell(value: string): string {
-  const mustQuote = value === "" || /[",\n\r]/.test(value);
-  const escaped = value.replaceAll('"', '""');
+export function escapeCsvCell(value: CsvWritableCell): string {
+  const text = typeof value === "string" ? value : value.text;
+  const quoted = typeof value === "string" ? false : value.quoted;
+  const mustQuote = quoted || /[",\n\r]/.test(text);
+  const escaped = text.replaceAll('"', '""');
   return mustQuote ? `"${escaped}"` : escaped;
 }
 
